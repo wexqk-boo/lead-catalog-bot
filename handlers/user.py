@@ -16,7 +16,6 @@ from states.order import OrderFSM
 router = Router()
 
 
-# 1. Команда /start
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
@@ -29,7 +28,6 @@ async def cmd_start(message: Message, state: FSMContext):
     )
 
 
-# 2. Кнопка "Обо мне"
 @router.message(F.text == "ℹ️ Обо мне")
 async def about_me(message: Message):
     await message.answer(
@@ -40,7 +38,6 @@ async def about_me(message: Message):
     )
 
 
-# 3. Кнопка "Контакты"
 @router.message(F.text == "📞 Контакты")
 async def contacts(message: Message):
     await message.answer(
@@ -51,7 +48,6 @@ async def contacts(message: Message):
     )
 
 
-# 4. Открытие каталога (текстом из меню или кнопкой "Назад")
 @router.message(F.text == "🛍 Каталог услуг")
 async def show_catalog(message: Message):
     items = await get_all_items()
@@ -74,8 +70,6 @@ async def back_to_catalog(callback: CallbackQuery):
     )
     await callback.answer()
 
-
-# 5. Клик по конкретной услуге -> карточка
 @router.callback_query(F.data.startswith("item_"))
 async def show_item(callback: CallbackQuery):
     item_id = int(callback.data.split("_")[1])
@@ -96,13 +90,11 @@ async def show_item(callback: CallbackQuery):
     await callback.answer()
 
 
-# 6. Клик "Заказать" -> старт FSM
 @router.callback_query(F.data.startswith("buy_"))
 async def start_order(callback: CallbackQuery, state: FSMContext):
     item_id = int(callback.data.split("_")[1])
     item = await get_item_by_id(item_id)
 
-    # Сохраняем название услуги в память сессии пользователя
     await state.update_data(item_title=item["title"])
     await state.set_state(OrderFSM.waiting_for_name)
 
@@ -114,7 +106,6 @@ async def start_order(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-# 7. Отмена на любом этапе
 @router.message(F.text == "❌ Отмена")
 async def cancel_handler(message: Message, state: FSMContext):
     current_state = await state.get_state()
@@ -126,7 +117,6 @@ async def cancel_handler(message: Message, state: FSMContext):
     )
 
 
-# 8. Ловим имя
 @router.message(OrderFSM.waiting_for_name)
 async def process_name(message: Message, state: FSMContext):
     if not message.text:
@@ -142,8 +132,6 @@ async def process_name(message: Message, state: FSMContext):
         reply_markup=get_phone_kb(),
     )
 
-
-# 9. Ловим телефон (кнопкой или текстом)
 @router.message(OrderFSM.waiting_for_phone)
 async def process_phone(message: Message, state: FSMContext):
     if message.contact:
@@ -165,13 +153,11 @@ async def process_phone(message: Message, state: FSMContext):
     )
 
 
-# 10. Ловим комментарий -> сохраняем в БД и уведомляем админа
 @router.message(OrderFSM.waiting_for_comment)
 async def process_comment(message: Message, state: FSMContext):
     comment = message.text if message.text else "Без комментария"
     data = await state.get_data()
 
-    # 1. Сохраняем заявку в базу
     lead_id = await add_lead(
         user_id=message.from_user.id,
         username=message.from_user.username,
@@ -181,15 +167,12 @@ async def process_comment(message: Message, state: FSMContext):
         comment=comment,
     )
 
-    # 2. Уведомляем клиента
     await message.answer(
         "✅ <b>Ваша заявка принята!</b>\n"
         "Я свяжусь с вами в ближайшее время для уточнения деталей.",
         reply_markup=get_main_menu_kb(),
         parse_mode="HTML",
     )
-
-    # 3. Отправляем карточку заявки админу с кнопками управления
     username_text = (
         f"@{message.from_user.username}"
         if message.from_user.username
@@ -216,5 +199,4 @@ async def process_comment(message: Message, state: FSMContext):
         parse_mode="HTML",
     )
 
-    # Очищаем состояние
     await state.clear()
