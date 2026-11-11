@@ -8,25 +8,20 @@ from database.db import get_all_leads, update_lead_status
 
 router = Router()
 
-# Защита: этот роутер слушает ТОЛЬКО сообщения от админа
 router.message.filter(F.from_user.id == config.admin_id)
 router.callback_query.filter(F.from_user.id == config.admin_id)
 
 
-# 1. Смена статуса: "Взять в работу"
 @router.callback_query(F.data.startswith("status_progress_"))
 async def mark_in_progress(callback: CallbackQuery):
     lead_id = int(callback.data.split("_")[2])
     await update_lead_status(lead_id, "in_progress")
 
-    # Обновляем текст карточки
     old_text = callback.message.html_text
     new_text = old_text + "\n\n🟡 <i>Статус: В работе</i>"
 
-    # Меняем кнопку на "Завершить"
     from keyboards.builders import get_admin_lead_kb
 
-    # Достаем ссылку из старой кнопки
     client_url = callback.message.reply_markup.inline_keyboard[0][0].url
     builder = callback.message.reply_markup.inline_keyboard
 
@@ -38,7 +33,6 @@ async def mark_in_progress(callback: CallbackQuery):
     await callback.answer("Заявка взята в работу!")
 
 
-# 2. Смена статуса: "Завершить"
 @router.callback_query(F.data.startswith("status_done_"))
 async def mark_completed(callback: CallbackQuery):
     lead_id = int(callback.data.split("_")[2])
@@ -50,7 +44,6 @@ async def mark_completed(callback: CallbackQuery):
         ).strip()
         + "\n\n✅ <b>Заявка выполнена!</b>"
     )
-    # Убираем кнопку смены статуса, оставляем только контакт
     from aiogram.utils.keyboard import InlineKeyboardBuilder
 
     client_button = callback.message.reply_markup.inline_keyboard[0][0]
@@ -63,7 +56,6 @@ async def mark_completed(callback: CallbackQuery):
     await callback.answer("Заявка закрыта!")
 
 
-# 3. Выгрузка базы в CSV (команда /export)
 @router.message(Command("export"))
 async def export_leads(message: Message):
     leads = await get_all_leads()
@@ -72,7 +64,6 @@ async def export_leads(message: Message):
         await message.answer("В базе пока нет заявок.")
         return
 
-    # Создаем CSV в оперативной памяти без лишних файлов на диске
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";")
     writer.writerow(
@@ -102,8 +93,7 @@ async def export_leads(message: Message):
             ]
         )
 
-    # Конвертируем в байты для отправки документом в Telegram
-    csv_bytes = output.getvalue().encode("utf-8-sig")  # utf-8-sig чтобы русский Excel открыл без крякозябр
+    csv_bytes = output.getvalue().encode("utf-8-sig")
     document = BufferedInputFile(csv_bytes, filename="leads_export.csv")
 
     await message.answer_document(
