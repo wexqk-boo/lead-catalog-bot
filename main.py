@@ -10,15 +10,12 @@ logging.basicConfig(level=logging.INFO)
 
 
 async def main():
-    # 1. Инициализируем базу
     await init_db()
     print("📦 База данных готова!")
 
-    # 2. Создаем бота и диспетчер
     bot = Bot(token=config.bot_token)
     dp = Dispatcher()
 
-    # 3. Регистрируем роутеры (admin первым, чтобы перехватывать админские действия)
     dp.include_router(admin_router)
     dp.include_router(user_router)
 
