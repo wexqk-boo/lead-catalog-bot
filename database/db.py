@@ -6,7 +6,6 @@ DB_NAME = "database.db"
 async def init_db():
     """Создает таблицы при первом запуске и добавляет тестовые товары, если пусто."""
     async with aiosqlite.connect(DB_NAME) as db:
-        # Таблица товаров/услуг
         await db.execute(
             """
             CREATE TABLE IF NOT EXISTS items (
@@ -18,7 +17,6 @@ async def init_db():
         """
         )
 
-        # Таблица заявок
         await db.execute(
             """
             CREATE TABLE IF NOT EXISTS leads (
@@ -35,7 +33,6 @@ async def init_db():
         """
         )
 
-        # Проверяем, есть ли уже товары. Если нет — добавим демо-услуги
         async with db.execute("SELECT COUNT(*) FROM items") as cursor:
             count = (await cursor.fetchone())[0]
             if count == 0:
@@ -132,7 +129,6 @@ async def get_all_leads():
             return await cursor.fetchall()
 
 
-# И немного обнови функцию add_lead, чтобы она возвращала ID новой строки:
 async def add_lead(
     user_id: int,
     username: str | None,
