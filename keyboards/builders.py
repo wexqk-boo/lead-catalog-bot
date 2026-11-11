@@ -8,7 +8,6 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 def get_main_menu_kb() -> ReplyKeyboardMarkup:
-    """Главное меню внизу экрана."""
     kb = [
         [KeyboardButton(text="🛍 Каталог услуг")],
         [KeyboardButton(text="ℹ️ Обо мне"), KeyboardButton(text="📞 Контакты")],
@@ -20,18 +19,15 @@ def get_catalog_kb(items) -> InlineKeyboardMarkup:
     """Инлайн-кнопки со списком товаров из базы данных."""
     builder = InlineKeyboardBuilder()
     for item in items:
-        # В callback_data зашиваем ID товара
         builder.button(
             text=f"{item['title']} — {item['price']} ₽",
             callback_data=f"item_{item['id']}",
         )
-    # Располагаем по 1 кнопке в строке
     builder.adjust(1)
     return builder.as_markup()
 
 
 def get_item_card_kb(item_id: int) -> InlineKeyboardMarkup:
-    """Кнопки под карточкой конкретного товара."""
     builder = InlineKeyboardBuilder()
     builder.button(
         text="📝 Заказать эту услугу", callback_data=f"buy_{item_id}"
@@ -42,7 +38,6 @@ def get_item_card_kb(item_id: int) -> InlineKeyboardMarkup:
 
 
 def get_phone_kb() -> ReplyKeyboardMarkup:
-    """Кнопка для быстрой отправки номера телефона."""
     kb = [
         [KeyboardButton(text="📱 Отправить мой номер", request_contact=True)],
         [KeyboardButton(text="❌ Отмена")],
@@ -58,10 +53,8 @@ def get_admin_lead_kb(
     client_username: str | None,
     status: str = "new",
 ) -> InlineKeyboardMarkup:
-    """Кнопки под карточкой заявки у админа."""
     builder = InlineKeyboardBuilder()
 
-    # Ссылка на клиента
     url = (
         f"https://t.me/{client_username}"
         if client_username
@@ -69,7 +62,6 @@ def get_admin_lead_kb(
     )
     builder.button(text="💬 Написать клиенту", url=url)
 
-    # Кнопки смены статуса
     if status == "new":
         builder.button(
             text="⏳ Взять в работу", callback_data=f"status_progress_{lead_id}"
